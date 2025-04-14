@@ -22,13 +22,15 @@ def affine_forward(x, w, b):
     - cache: (x, w, b)
     """
     out = None
+    
     ###########################################################################
     # TODO: Implement the affine forward pass. Store the result in out. You   #
     # will need to reshape the input into rows.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    num_train = x.shape[0]
+    out = np.reshape(x,(num_train,-1)).dot(w) + b
 
-    pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -60,8 +62,15 @@ def affine_backward(dout, cache):
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    num_train = x.shape[0]
+    dimensons = []
+    k = len(x.shape)
+    for i in range(k):
+      dimensons.append(x.shape[i])
+    dx = np.reshape(dout.dot(w.T),dimensons)
+    dw = np.reshape(x,(num_train,-1)).T.dot(dout)
+    db = dout.T.dot(np.ones((dout.shape[0])))
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -87,7 +96,7 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = np.maximum(0, x)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -113,8 +122,7 @@ def relu_backward(dout, cache):
     # TODO: Implement the ReLU backward pass.                                 #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    dx = dout * ((x > 0).astype(float))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -773,7 +781,18 @@ def svm_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train, num_class = x.shape[0], x.shape[1]
+    y_scores = x[np.arange(num_train),y]
+    svm_loss = np.maximum(x - y_scores.reshape(-1,1) + 1, 0)
+    mask = (svm_loss > 0).astype(float)
+    mask[np.arange(num_train), y] = 0
+    row_sum = np.sum(mask,axis=1)
+    mask[np.arange(num_train), y]  -= row_sum
+    dx = mask
+    loss += np.sum(svm_loss) - num_train
+    loss /= num_train
+    
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

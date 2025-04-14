@@ -55,7 +55,11 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        self.params['W1'] = np.random.randn(input_dim,hidden_dim) * weight_scale
+        self.params['W2'] = np.random.randn(hidden_dim,num_classes) * weight_scale
+        self.params['b1'] = np.zeros(hidden_dim)
+        self.params['b2'] = np.zeros(num_classes)
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -88,7 +92,11 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        
+        ar_out, ar_cache = affine_relu_forward(X,self.params['W1'],self.params['b1'])
+        ara_out, ara_cache = affine_forward(ar_out,self.params['W2'],self.params['b2'])
+        scores = ara_out
+ 
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -112,7 +120,14 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss,dx = softmax_loss(scores,y)
+        loss += 0.5 * self.reg * (np.sum(np.square(self.params['W1']))+np.sum(np.square(self.params['W2'])))
+        dx, dw, db = affine_backward(dx,ara_cache)
+        grads['W2'] = dw +  self.reg * self.params['W2'] 
+        grads['b2'] = db
+        _, dw, db = affine_relu_backward(dx,ar_cache)
+        grads['W1'] = dw +  self.reg * self.params['W1'] 
+        grads['b1'] = db
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
