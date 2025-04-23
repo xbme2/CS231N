@@ -73,8 +73,21 @@ class FullyConnectedNet(object):
         # parameters should be initialized to zeros.                               #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        assert(len(hidden_dims) == self.num_layers-1)
+        self.params["W1"] = weight_scale * np.random.randn(input_dim,hidden_dims[0])
+        self.params["b1"] = np.zeros(hidden_dims[0])
+        self.params["gamma1"] = np.ones(hidden_dims[0])
+        self.params["beta1"] = np.zeros(hidden_dims[0])
 
-        pass
+        for i in range(2,self.num_layers):
+            self.params["W"+str(i)] = weight_scale * np.random.randn(hidden_dims[i-2],hidden_dims[i-1])
+            self.params["b"+str(i)] = np.zeros(hidden_dims[i-1])
+            self.params["gamma"+str(i)] = np.ones(hidden_dims[i-1])
+            self.params["beta"+str(i)] = np.zeros(hidden_dims[i-1])
+        self.params["W"+str(self.num_layers)] = weight_scale * np.random.randn(hidden_dims[self.num_layers-2],num_classes)
+        self.params["b"+str(self.num_layers)] = np.zeros(num_classes)
+
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -147,9 +160,22 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        caches = {}
+        for i in range(1,self.num_layers):
+            w, b,gamm,beta  = self.params["W"+str(i)], self.params["b"+str(i)],self.params["gamma"+str(i)],self.params["beta"+str(i)]
+            X,affine_cache = affine_forward(X,w,b)
+            assert(i-1< self.num_layers-1)
+            if self.normalization == "batchnorm":
+              X,norm_cache = batchnorm_forward(X,gamm,beta,self.bn_params[i-1])
+            elif self.normalization == "layernorm":
+              X,norm_cache = layernorm_forward(X,gamm,beta,self.bn_params[i-1]) 
+            else:
+              norm_cache = None
+            X, relu_cache = relu_forward(X)
+            caches[i] = (affine_cache,norm_cache,relu_cache)
+        w, b = self.params["W"+str(self.num_layers)], self.params["b"+str(self.num_layers)]
+        scores, cache = affine_forward(X,w,b)
+        caches[self.num_layers] = cache
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -175,7 +201,31 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dx = softmax_loss(scores,y)
+        assert(self.num_layers > 2)
+        for i in range(1, self.num_layers + 1):
+          W = self.params['W' + str(i)]
+          loss += 0.5 * self.reg * np.sum(W * W)
+        dout, dw, db = affine_backward(dx, caches[self.num_layers])
+        grads['W' + str(self.num_layers)] = dw + self.reg * self.params['W' + str(self.num_layers)]
+        grads['b' + str(self.num_layers)] = db
+
+        for i in reversed(range(1, self.num_layers)):
+            affine_cache,norm_cache,relu_cache = caches[i]
+            dout = relu_backward(dout,relu_cache)
+            if self.normalization == "batchnorm" :
+              dout, dgamma, dbeta = batchnorm_backward_alt(dout,norm_cache)
+            elif self.normalization == "layernorm":
+              dout, dgamma, dbeta = layernorm_backward(dout,norm_cache)
+            else:
+              dgamma = 0
+              dbeta = 0
+            dout, dw, db = affine_backward(dout, affine_cache)
+            grads['W' + str(i)] = dw + self.reg * self.params['W' + str(i)]
+            grads['b' + str(i)] = db
+            grads["gamma"+str(i)] = dgamma
+            grads["beta"+str(i)] = dbeta
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
